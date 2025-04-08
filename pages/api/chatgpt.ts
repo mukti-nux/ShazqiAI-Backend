@@ -12,9 +12,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { prompt } = req.body;
 
+  if (!prompt || typeof prompt !== "string") {
+    return res.status(400).json({ error: "Invalid prompt." });
+  }
+
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o-mini", // atau gpt-3.5-turbo untuk testing
       messages: [
         {
           role: "system",
@@ -32,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const result = response.choices[0].message.content;
     return res.status(200).json({ result });
   } catch (err: any) {
-    console.error("OpenAI Error:", err.message);
+    console.error("OpenAI Error:", err?.response?.data || err.message || err);
     return res.status(500).json({ error: "Something went wrong." });
   }
 }
