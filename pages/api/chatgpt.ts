@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   
   // Cek apakah pengguna nanya soal cuaca
-  const isWeatherQuestion = /cuaca|derajat|panas|dingin/i.test(prompt);
+  const isWeatherQuestion = /cuaca|derajat|panas|dingin|suhu/i.test(prompt);
 
   if (isWeatherQuestion) {
     try {
