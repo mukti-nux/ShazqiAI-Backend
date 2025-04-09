@@ -20,6 +20,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { prompt } = req.body;
+  
+
+  const locationMap = {
+    tempuran: { lat: -7.4706, lon: 110.2178 },
+    magelang: { lat: -7.4706, lon: 110.2178 }, // ganti sesuai real
+  };
+  
+  let foundLocation = null;
+  for (const key in locationMap) {
+    if (prompt.toLowerCase().includes(key)) {
+      foundLocation = locationMap[key];
+      break;
+    }
+  }
+  
+  let promptModified = prompt;
+
+  if (foundLocation) {
+    promptModified += `\nLokasi pengguna terdeteksi di sekitar koordinat lat: ${foundLocation.lat}, lon: ${foundLocation.lon}`;
+  }
+  
 
   // Cek apakah pengguna nanya soal cuaca
   const isWeatherQuestion = /cuaca|derajat|panas|dingin/i.test(prompt);
