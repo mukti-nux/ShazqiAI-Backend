@@ -34,14 +34,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
     }
   }
-  
+
   let promptModified = prompt;
 
   if (foundLocation) {
     promptModified += `\nLokasi pengguna terdeteksi di sekitar koordinat lat: ${foundLocation.lat}, lon: ${foundLocation.lon}`;
   }
   
-
   // Cek apakah pengguna nanya soal cuaca
   const isWeatherQuestion = /cuaca|derajat|panas|dingin/i.test(prompt);
 
