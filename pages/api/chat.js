@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         `🔹 *${i + 1}. ${item.title}*\n${item.description}\n👉 ${item.url}`
       )).join('\n\n');
 
-      return res.status(200 ).json({
+      return res.status(200).json({
         role: "assistant",
         content: formatted || "Maaf, aku tidak menemukan hasil yang relevan dari Brave Search.",
       });
