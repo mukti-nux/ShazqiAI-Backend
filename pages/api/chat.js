@@ -1,5 +1,5 @@
 // pages/api/chat.js
-import { searchBrave } from '@/lib/braveSearch';
+import { searchBrave } from '../../lib/braveSearch';
 
 export default async function handler(req, res) {
   const { message } = req.body;
