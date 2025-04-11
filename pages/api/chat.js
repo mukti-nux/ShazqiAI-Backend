@@ -12,25 +12,21 @@ export default async function handler(req, res) {
 
   // 🔍 Deteksi jika ada keyword pencarian
   const keyword = message.toLowerCase();
-console.log("📥 Diterima pesan:", keyword);
-
-  if (
+  const isSearch = (
     keyword.includes("cari") ||
     keyword.includes("search") ||
     keyword.startsWith("haloo shaz") ||
     keyword.includes("apa itu") ||
     keyword.includes("siapa") ||
     keyword.includes("jelaskan")
-) {
-  console.log("🔍 Deteksi pencarian aktif. Keyword cocok:", keyword);
+  );
 
-  // panggil fungsi pencarian Brave di sini
-  const searchResult = await searchBrave(keyword); // pastikan sudah diimport
-  return NextResponse.json({ text: searchResult });
-}
-    console.log("🔍 Keyword 'cari' atau 'search' terdeteksi! Menggunakan Brave...");
+  if (isSearch) {
+    console.log("🔍 Deteksi pencarian aktif. Keyword cocok:", keyword);
+
     try {
       const results = await searchBrave(message);
+
       const formatted = results.map((item) => (
         `🔎 **${item.title}**\n${item.description}\n🔗 ${item.url}`
       )).join('\n\n');
@@ -72,3 +68,4 @@ console.log("📥 Diterima pesan:", keyword);
     console.error("❌ Gagal mendapatkan respons dari ChatGPT:", err.message);
     return res.status(500).json({ error: 'Gagal mendapatkan respons dari ChatGPT.' });
   }
+}
