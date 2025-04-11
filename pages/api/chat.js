@@ -6,13 +6,12 @@ export default async function handler(req, res) {
   console.log("📩 Pesan diterima:", message);
 
   if (!message) {
-    console.warn("⚠️ Tidak ada message dikirim!");
     return res.status(400).json({ error: 'Tidak ada pesan yang dikirim.' });
   }
 
   const keyword = message.toLowerCase();
 
-  // 🔍 Cek apakah perlu pencarian di Brave
+  // 🧠 Deteksi apakah perlu pakai Brave
   const isSearch =
     keyword.includes("cari") ||
     keyword.includes("search") ||
@@ -22,27 +21,25 @@ export default async function handler(req, res) {
     keyword.includes("jelaskan");
 
   if (isSearch) {
-    console.log("🔍 Deteksi pencarian aktif, menggunakan Brave API...");
-
+    console.log("🔍 Deteksi pencarian. Menggunakan Brave...");
     try {
       const results = await searchBrave(message);
-      const formatted = results.map((item) => (
+      const formatted = results.slice(0, 5).map((item) => (
         `🔎 **${item.title}**\n${item.description}\n🔗 ${item.url}`
       )).join('\n\n');
 
       return res.status(200).json({
         role: "assistant",
-        content: formatted || "Tidak ada hasil ditemukan dari Brave.",
+        content: formatted || "Maaf, tidak ditemukan hasil yang relevan.",
       });
     } catch (err) {
-      console.error("❌ Gagal mengambil dari Brave:", err);
+      console.error("❌ Brave Search error:", err);
       return res.status(500).json({ error: 'Gagal mengambil data dari Brave Search.' });
     }
   }
 
-  // 🤖 Jika bukan pencarian → ke OpenAI
-  console.log("🤖 Lanjutkan ke ChatGPT...");
-
+  // 🤖 Lanjut ke OpenAI kalau bukan pencarian
+  console.log("💬 Melanjutkan ke OpenAI...");
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: "POST",
@@ -58,14 +55,12 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    console.log("✅ Respons dari OpenAI:", data);
-
     return res.status(200).json({
       role: "assistant",
       content: data.choices?.[0]?.message?.content || "(Tidak ada balasan)",
     });
   } catch (err) {
-    console.error("❌ Gagal dari OpenAI:", err);
+    console.error("❌ ChatGPT error:", err);
     return res.status(500).json({ error: 'Gagal mendapatkan respons dari ChatGPT.' });
   }
 }
