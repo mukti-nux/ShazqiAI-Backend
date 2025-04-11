@@ -8,20 +8,32 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Tidak ada pesan yang dikirim.' });
   }
 
-  // 🔍 Deteksi jika user ingin mencari di internet
-  if (message.toLowerCase().includes("cari") || message.toLowerCase().includes("search")) {
-    console.log("🔍 Trigger pencarian Brave jalan");
-    try {
-      const results = await searchBrave(message);
-      const formatted = results.map((item) => (
-        `🔎 **${item.title}**\n${item.description}\n🔗 ${item.url}`
-      )).join('\n\n');      
+  const lowerMessage = message.toLowerCase();
 
-      return res.status(200).json({
+  // 🔍 Deteksi jika user ingin mencari di internet
+  if (lowerMessage.includes("cari") || lowerMessage.includes("search")) {
+    console.log("🔍 Trigger pencarian Brave jalan");
+
+    // Ambil hanya isi query setelah "cari" atau "search"
+    const query = message
+      .toLowerCase()
+      .replace(/^search\s+/i, '')
+      .replace(/^cari\s+/i, '');
+
+    try {
+      const results = await searchBrave(query);
+
+      const formatted = results.map((item, i) => (
+        `🔹 *${i + 1}. ${item.title}*\n${item.description}\n👉 ${item.url}`
+      )).join('\n\n');
+
+      return res.status(200 ).json({
         role: "assistant",
-        content: formatted,
+        content: formatted || "Maaf, aku tidak menemukan hasil yang relevan dari Brave Search.",
       });
+
     } catch (err) {
+      console.error("❌ Brave Search error:", err);
       return res.status(500).json({ error: 'Gagal mengambil data dari Brave Search.' });
     }
   }
@@ -35,7 +47,7 @@ export default async function handler(req, res) {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4",
+        model: "gpt-4o-mini",
         messages: [{ role: "user", content: message }],
         temperature: 0.7,
       }),
@@ -47,7 +59,9 @@ export default async function handler(req, res) {
       role: "assistant",
       content: data.choices?.[0]?.message?.content || "(Tidak ada balasan)",
     });
-    } catch (err) {
+
+  } catch (err) {
+    console.error("❌ ChatGPT API error:", err);
     return res.status(500).json({ error: 'Gagal mendapatkan respons dari ChatGPT.' });
-    }
+  }
 }
