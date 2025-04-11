@@ -9,7 +9,8 @@ export default async function handler(req, res) {
   }
 
   // 🔍 Deteksi jika user ingin mencari di internet
-  if (message.includes("cari") || message.includes("search")) {
+  if (message.toLowerCase().includes("cari") || message.toLowerCase().includes("search")) {
+    console.log("🔍 Trigger pencarian Brave jalan");
     try {
       const results = await searchBrave(message);
       const formatted = results.map((item) => (
@@ -50,4 +51,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Gagal mendapatkan respons dari ChatGPT.' });
     }
 }
-
