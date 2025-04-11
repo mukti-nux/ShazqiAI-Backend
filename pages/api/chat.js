@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       const results = await searchBrave(message);
       const formatted = results.map((item) => (
         `🔎 **${item.title}**\n${item.description}\n🔗 ${item.url}`
-      )).join('\n\n');
+      )).join('\n\n');      
 
       return res.status(200).json({
         role: "assistant",
