@@ -4,6 +4,8 @@ import { searchBrave } from '../../lib/braveSearch';
 export default async function handler(req, res) {
   const { message } = req.body;
 
+  console.log("📩 Pesan diterima:", message); // tambahkan ini
+
   if (!message) {
     return res.status(400).json({ error: 'Tidak ada pesan yang dikirim.' });
   }
