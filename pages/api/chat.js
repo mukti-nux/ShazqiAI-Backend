@@ -33,9 +33,7 @@ export default async function handler(req, res) {
 
     try {
       const results = await searchSerper(message);
-      const formatted = results.map((item) => (
-        `🔎 **${item.title}**\n${item.snippet}\n🔗 ${item.link}`
-      )).join('\n\n');
+      const formatted = results.length > 0 ? `🔎 **${results[0].title}**\n${results[0].snippet}\n🔗 ${results[0].link}` : "Tidak ditemukan hasil yang relevan.";
 
       return res.status(200).json({
         role: "assistant",
