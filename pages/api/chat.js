@@ -3,6 +3,19 @@ import { getWeather } from '@/lib/weatherAPI'; // misalnya ini open-meteo
 import { NextResponse } from 'next/server';
 
 export default async function handler(req, res) {
+  // ✅ Tambahin header CORS
+  res.setHeader("Access-Control-Allow-Origin", "https://portofoliomukti.framer.website/");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  // ... lanjutkan kode aslinya di sini
+}
+
+export default async function handler(req, res) {
   const { message } = req.body;
   const keyword = message.toLowerCase();
 
