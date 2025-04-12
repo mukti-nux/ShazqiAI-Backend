@@ -1,6 +1,16 @@
 import { searchSerper } from '../../lib/searchSerper';
 
 export default async function handler(req, res) {
+  // ✅ Tambahkan header CORS
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // ✅ Tangani preflight request
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   const { message } = req.body;
   console.log("📩 Pesan diterima:", message);
 
@@ -10,6 +20,7 @@ export default async function handler(req, res) {
 
   const keyword = message.toLowerCase();
 
+  // 🔍 Deteksi keyword pencarian
   if (
     keyword.includes("cari") ||
     keyword.includes("search") ||
@@ -36,7 +47,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // Jika bukan keyword pencarian, pakai ChatGPT
+  // 🤖 Jika bukan keyword pencarian, pakai ChatGPT
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: "POST",
