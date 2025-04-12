@@ -1,4 +1,4 @@
-import { searchBrave } from '../../lib/braveSearch';
+import { searchSerper } from '../../lib/searchSerper';
 
 export default async function handler(req, res) {
   const { message } = req.body;
@@ -18,11 +18,12 @@ export default async function handler(req, res) {
     keyword.includes("siapa") ||
     keyword.includes("jelaskan")
   ) {
-    console.log("🔍 Deteksi pencarian aktif. Keyword cocok:", keyword);
+    console.log("🔍 Deteksi pencarian Serper aktif...");
+
     try {
-      const results = await searchBrave(keyword);
+      const results = await searchSerper(message);
       const formatted = results.map((item) => (
-        `🔎 **${item.title}**\n${item.description}\n🔗 ${item.url}`
+        `🔎 **${item.title}**\n${item.snippet}\n🔗 ${item.link}`
       )).join('\n\n');
 
       return res.status(200).json({
@@ -31,12 +32,11 @@ export default async function handler(req, res) {
       });
     } catch (err) {
       console.error("❌ Gagal melakukan pencarian:", err.message);
-      return res.status(500).json({ error: 'Gagal mengambil data dari Brave Search.' });
+      return res.status(500).json({ error: 'Gagal mengambil data dari Serper Search.' });
     }
   }
 
-  // 🤖 Jika bukan pencarian, lanjut ke OpenAI
-  console.log("🤖 Bukan pencarian, meneruskan ke OpenAI...");
+  // Jika bukan keyword pencarian, pakai ChatGPT
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: "POST",
@@ -52,14 +52,12 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    console.log("✅ Respons OpenAI diterima:", data);
-
     return res.status(200).json({
       role: "assistant",
       content: data.choices?.[0]?.message?.content || "(Tidak ada balasan)",
     });
   } catch (err) {
-    console.error("❌ Gagal mendapatkan respons dari ChatGPT:", err.message);
+    console.error("❌ Gagal dari ChatGPT:", err.message);
     return res.status(500).json({ error: 'Gagal mendapatkan respons dari ChatGPT.' });
   }
 }
