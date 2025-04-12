@@ -1,17 +1,13 @@
-// pages/api/search.js
-import { searchBrave } from '@/lib/braveSearch';
+export async function searchSerper(query) {
+  const response = await fetch('https://google.serper.dev/search', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-KEY': process.env.SERPER_API_KEY,
+    },
+    body: JSON.stringify({ q: query }),
+  });
 
-export default async function handler(req, res) {
-  const { query } = req.query;
-
-  if (!query) {
-    return res.status(400).json({ error: 'Query kosong!' });
-  }
-
-  try {
-    const results = await searchBrave(query);
-    res.status(200).json({ results });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const data = await response.json();
+  return data?.organic || [];
 }
