@@ -45,6 +45,17 @@ export default async function handler(req, res) {
     }
   }
 
+  //jika terdapat keyword pencarian, pakai Meteo
+  if (keyword.includes("cuaca") || keyword.includes("suhu")) {
+    console.log("🌤️ Deteksi cuaca...");
+    const response = await fetch("https://api.open-meteo.com/v1/forecast?latitude=-7.4706&longitude=110.2178&daily=temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,precipitation_hours,uv_index_clear_sky_max&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m&timezone=Asia%2FBangkok"); // sesuaikan URL & query
+    const weather = await response.json();
+    return res.status(200).json({
+      role: "assistant",
+      content: `Cuaca saat ini: ${weather.current.temperature}°C.`,
+    });
+  }
+  
   // 🤖 Jika bukan keyword pencarian, pakai ChatGPT
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -61,10 +72,22 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    return res.status(200).json({
-      role: "assistant",
-      content: data.choices?.[0]?.message?.content || "(Tidak ada balasan)",
-    });
+
+if (!response.ok) {
+  console.error("⚠️ Error dari OpenAI:", data);
+  return res.status(500).json({ error: data.error?.message || "Gagal dari OpenAI" });
+}
+
+if (!data.choices || !data.choices[0]?.message?.content) {
+  console.warn("⚠️ Response OpenAI tidak memiliki konten.");
+  return res.status(500).json({ error: "Tidak ada balasan dari AI." });
+}
+
+return res.status(200).json({
+  role: "assistant",
+  content: data.choices[0].message.content,
+});
+
   } catch (err) {
     console.error("❌ Gagal dari ChatGPT:", err.message);
     return res.status(500).json({ error: 'Gagal mendapatkan respons dari ChatGPT.' });
