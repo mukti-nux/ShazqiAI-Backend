@@ -24,9 +24,9 @@ export default async function handler(req, res) {
   if (
     keyword.includes("cari") ||
     keyword.includes("search") ||
-    keyword.startsWith("haloo shaz") ||
+    keyword.startsWith("") ||
     keyword.includes("apa itu") ||
-    keyword.includes("siapa") ||
+    keyword.includes("") ||
     keyword.includes("jelaskan")
   ) {
     console.log("🔍 Deteksi pencarian Serper aktif...");
