@@ -1,5 +1,5 @@
 import { searchSerper } from '@/lib/searchSerper';
-import { getWeather } from '@/page/api/cuaca'; // misalnya ini open-meteo
+import { getWeather } from '@/lib/weatherAPI'; // misalnya ini open-meteo
 import { NextResponse } from 'next/server';
 
 export default async function handler(req, res) {
