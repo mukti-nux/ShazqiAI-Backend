@@ -13,7 +13,6 @@ export default async function handler(req, res) {
   }
 
   // ... lanjutkan kode aslinya di sini
-}
 
   // 🔍 1. Deteksi Cuaca
   if (keyword.includes("cuaca") || keyword.includes("weather")) {
