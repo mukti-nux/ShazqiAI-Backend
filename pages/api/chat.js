@@ -15,14 +15,6 @@ export default async function handler(req, res) {
   // ... lanjutkan kode aslinya di sini
 }
 
-export default async function handler(req, res) {
-  const { message } = req.body;
-  const keyword = message.toLowerCase();
-
-  if (!message) {
-    return res.status(400).json({ error: 'Tidak ada pesan dikirim.' });
-  }
-
   // 🔍 1. Deteksi Cuaca
   if (keyword.includes("cuaca") || keyword.includes("weather")) {
     const weather = await getWeather(); // kamu atur fungsi dan parameternya
