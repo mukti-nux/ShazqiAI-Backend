@@ -1,18 +1,17 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Inisialisasi Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Set header CORS untuk izinkan akses dari Framer
-  res.setHeader('Access-Control-Allow-Origin', 'https://portofoliomukti.framer.website'); // Ganti jika URL berbeda
+  // Setup CORS
+  res.setHeader('Access-Control-Allow-Origin', 'https://portofoliomukti.framer.website');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Cek request method
   if (req.method === 'OPTIONS') {
-    return res.status(200).end(); // CORS Preflight request
+    return res.status(200).end(); // Untuk preflight request dari browser
   }
 
   if (req.method !== 'POST') {
@@ -21,15 +20,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { message } = req.body;
 
-  if (!message) {
-    return res.status(400).json({ error: 'Pesan tidak boleh kosong' });
+  if (!message || typeof message !== 'string') {
+    return res.status(400).json({ error: 'Pesan tidak valid' });
   }
 
   try {
-    // Request ke Gemini API
-    const model = genAI.getGenerativeModel({ model: 'text-bison-1.5-pro' });
-    const result = await model.generateContent(message);
-    const response = await result.response;
+    const model = genAI.getGenerativeModel({ model: 'models/gemini-2.0-flash' });
+
+    const result = await model.generateContent({
+      contents: [
+        {
+          parts: [{ text: message }],
+          role: 'user',
+        },
+      ],
+    });
+
+    const response = result.response;
     const text = response.text();
 
     return res.status(200).json({ reply: text });
