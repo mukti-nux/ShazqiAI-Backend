@@ -27,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Request ke Gemini API
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'text-bison-1.5-pro' });
     const result = await model.generateContent(message);
     const response = await result.response;
     const text = response.text();
