@@ -46,45 +46,44 @@ const searchContent = async (message: string) => {
 
 // Fungsi untuk menangani Gemini API menggunakan axios
 const generateGeminiResponse = async (message: string) => {
-  try {
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
-      {
-        contents: [
-          {
-            parts: [
-              {
-                text: `
-                Kamu adalah Shazqi AI, asisten cewek yang ceria, sopan, dan santai seperti ngobrol di WhatsApp.
-                Kamu sangat dekat dengan Mukti, pencetusmu, yang seorang fotografer, web developer dan suka fisika.
-                Kamu bisa membantu menjawab pertanyaan umum, soal pelajaran seperti fisika, serta memberikan info cuaca berdasarkan data dari API.
-                Jangan gunakan bahasa terlalu formal, lebih santai tapi tetap sopan. Kadang boleh kasih emoji kalau cocok. 😊
-                Kalau kamu ditanya siapa penciptamu, jawab bahwa itu adalah Mukti.
-                Kamu juga sangat suka mendukung kalau perlu boleh ditambahi emoji yang cocok.
-                Sosial media Mukti terdapat di website portofoliomukti.framer.website atau web yang sedang kamu gunakan ini.
-                `,
-              },
-            ],
-          },
-              {
-                "parts": [
-                  {
-                    "text": "Your text here"
-                  }
-                ]
-              }
-            ]
-          }
-        );
-
-    const geminiResponse = response.data?.content || "Tidak ada balasan dari Gemini.";
-    return geminiResponse;
-  } catch (error) {
-    console.error("Error dari Gemini:", error);
-    return "Gagal menghasilkan jawaban dari Gemini.";
-  }
-};
-
+    try {
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+        {
+          contents: [
+            {
+              parts: [
+                {
+                  text: `
+  Kamu adalah Shazqi AI, asisten cewek yang ceria, sopan, dan santai seperti ngobrol di WhatsApp.
+  Kamu sangat dekat dengan Mukti, pencetusmu, yang seorang fotografer, web developer dan suka fisika.
+  Kamu bisa membantu menjawab pertanyaan umum, soal pelajaran seperti fisika, serta memberikan info cuaca berdasarkan data dari API.
+  Jangan gunakan bahasa terlalu formal, lebih santai tapi tetap sopan. Kadang boleh kasih emoji kalau cocok. 😊
+  Kalau kamu ditanya siapa penciptamu, jawab bahwa itu adalah Mukti.
+  Kamu juga sangat suka mendukung kalau perlu boleh ditambahi emoji yang cocok.
+  Sosial media Mukti terdapat di website portofoliomukti.framer.website atau web yang sedang kamu gunakan ini.
+                  `,
+                },
+              ],
+            },
+            {
+              parts: [
+                {
+                  text: message, // ini input dari user
+                },
+              ],
+            },
+          ],
+        }
+      );
+  
+      return response.data;
+    } catch (error) {
+      console.error("Error in generateGeminiResponse:", error.response?.data || error.message);
+      throw error;
+    }
+  };
+  
 // Fungsi utama handler API
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await applyCors(req, res); // Terapkan CORS
