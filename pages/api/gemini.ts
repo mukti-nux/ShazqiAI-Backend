@@ -67,9 +67,11 @@ const generateGeminiResponse = async (message: string) => {
             ],
           },
           {
-            parts: [
-              {
-                text: message,
+            "contents":[
+            {
+                "parts": [
+                {
+                 "text": "Your text here",
               },
             ],
           },
