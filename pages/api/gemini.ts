@@ -66,18 +66,16 @@ const generateGeminiResponse = async (message: string) => {
               },
             ],
           },
-          {
-            "contents":[
-            {
+              {
                 "parts": [
-                {
-                 "text": "Your text here",
-              },
-            ],
-          },
-        ],
-      }
-    );
+                  {
+                    "text": "Your text here"
+                  }
+                ]
+              }
+            ]
+          }
+        );
 
     const geminiResponse = response.data?.content || "Tidak ada balasan dari Gemini.";
     return geminiResponse;
