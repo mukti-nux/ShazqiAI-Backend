@@ -52,6 +52,7 @@ const generateGeminiResponse = async (message: string) => {
         {
           contents: [
             {
+              role: "user",
               parts: [
                 {
                   text: `
@@ -65,6 +66,7 @@ const generateGeminiResponse = async (message: string) => {
               ],
             },
             {
+              role: "user",
               parts: [
                 {
                   text: message, // ini input dari user
