@@ -1,123 +1,93 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import applyCors from "@/utils/cors"; // Sesuaikan dengan path file CORS
-import axios from "axios"; // Untuk cuaca API
-import { searchSerper } from "@/lib/searchSerper"; // Sesuaikan jika ada utilitas Serper
+import axios from "axios";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Inisialisasi API Gemini (gunakan API key yang sesuai)
-const GOOGLE_API_KEY = process.env.GEMINI_API_KEY;
+// Inisialisasi Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// Fungsi untuk menangani cuaca
-const getWeather = async () => {
-  try {
-    const weatherRes = await axios.get(
-      "https://api.open-meteo.com/v1/forecast?latitude=-7.4706&longitude=110.2178&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FBangkok"
-    );
-    const data = weatherRes.data.daily;
-    const max = data.temperature_2m_max[0];
-    const min = data.temperature_2m_min[0];
-    return `Cuaca hari ini di Tempuran: suhu tertinggi sekitar ${max}°C dan terendah ${min}°C. Jangan lupa bawa payung kalau mau keluar yaa~ ☁️☂️`;
-  } catch (error) {
-    return "Gagal ambil data cuaca.";
-  }
-};
-
-// Fungsi untuk menangani pencarian Serper
-const searchContent = async (message: string) => {
-  if (
-    message.startsWith("cari ") ||
-    message.startsWith("search ") ||
-    message.includes("apa itu") ||
-    message.includes("jelaskan") ||
-    message.includes("dimana")
-  ) {
-    try {
-      const results = await searchSerper(message);
-      const formatted = results.length > 0
-        ? `🔎 **${results[0].title}**\n${results[0].snippet}\n🔗 ${results[0].link}`
-        : "Tidak ditemukan hasil yang relevan.";
-      return formatted;
-    } catch (err) {
-      console.error("❌ Gagal ambil Serper:", err);
-      return "Gagal mengambil data pencarian.";
+// Fungsi pencarian Serper.dev
+async function searchSerper(query: string) {
+  const response = await axios.post(
+    "https://google.serper.dev/search",
+    { q: query },
+    {
+      headers: {
+        "X-API-KEY": process.env.SERPER_API_KEY!,
+        "Content-Type": "application/json",
+      },
     }
-  }
-  return null;
-};
+  );
 
-// Fungsi untuk menangani Gemini API menggunakan axios
-const generateGeminiResponse = async (message: string) => {
-    try {
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
-        {
-          contents: [
-            {
-              role: "user",
-              parts: [
-                {
-                  text: `
-      Kamu adalah Shazqi AI, asisten cewek yang ceria, sopan, dan santai.
-    Dekat dengan Mukti, seorang fotografer, web developer, dan suka fisika.
-    Bisa bantu jawab soal pelajaran, info cuaca, atau pertanyaan umum.
-    Gunakan gaya bahasa santai, seperti di WhatsApp, kadang boleh pakai emoji 😊.
-    Kalau ditanya siapa penciptamu, jawab Mukti.
-                  `,
-                },
-              ],
-            },
-            {
-              role: "user",
-              parts: [
-                {
-                  text: message, // ini input dari user
-                },
-              ],
-            },
-          ],
-        }
-      );
-  
-      return response.data;
-    } catch (error) {
-      console.error("Error in generateGeminiResponse:", error.response?.data || error.message);
-      throw error;
-    }
-  };
-  
-// Fungsi utama handler API
+  return response.data.organic || [];
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  await applyCors(req, res); // Terapkan CORS
+  // CORS
+  res.setHeader("Access-Control-Allow-Origin", "https://portofoliomukti.framer.website");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Metode tidak diizinkan" });
   }
 
-  const { message } = req.body;
-
-  if (!message) {
+  const { message: prompt } = req.body;
+  if (!prompt) {
     return res.status(400).json({ error: "Pesan tidak boleh kosong" });
   }
 
+  const keyword = prompt.toLowerCase();
+
+  // 🌤️ 1. Cek Cuaca
+  if (/cuaca|derajat|panas|dingin|suhu/i.test(keyword)) {
+    try {
+      const weatherRes = await axios.get(
+        "https://api.open-meteo.com/v1/forecast?latitude=-7.4706&longitude=110.2178&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FBangkok"
+      );
+      const data = weatherRes.data.daily;
+      const max = data.temperature_2m_max[0];
+      const min = data.temperature_2m_min[0];
+
+      const message = `Cuaca hari ini di Tempuran: suhu tertinggi sekitar ${max}°C dan terendah ${min}°C. Jangan lupa bawa payung kalau mau keluar yaa~ ☁️☂️`;
+
+      return res.status(200).json({ reply: message });
+    } catch (error) {
+      return res.status(500).json({ error: "Gagal ambil data cuaca." });
+    }
+  }
+
+  // 🔍 2. Deteksi Pencarian Serper
+  if (
+    keyword.startsWith("cari ") ||
+    keyword.startsWith("search ") ||
+    keyword.includes("apa itu") ||
+    keyword.includes("jelaskan") ||
+    keyword.includes("dimana")
+  ) {
+    try {
+      const results = await searchSerper(prompt);
+      const formatted =
+        results.length > 0
+          ? `🔎 *${results[0].title}*\n${results[0].snippet}\n🔗 ${results[0].link}`
+          : "Tidak ditemukan hasil yang relevan.";
+
+      return res.status(200).json({ reply: formatted });
+    } catch (err) {
+      console.error("❌ Gagal ambil Serper:", err);
+      return res.status(500).json({ error: "Gagal mengambil data pencarian." });
+    }
+  }
+
+  // 💬 3. Lanjut ke Gemini
   try {
-    // Cek apakah pesan mengandung pertanyaan cuaca
-    const isWeatherQuestion = /cuaca|derajat|panas|dingin|suhu/i.test(message);
-    if (isWeatherQuestion) {
-      const weatherMessage = await getWeather();
-      return res.status(200).json({ reply: weatherMessage });
-    }
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
 
-    // Cek apakah pesan adalah pencarian Serper
-    const searchMessage = await searchContent(message);
-    if (searchMessage) {
-      return res.status(200).json({ reply: searchMessage });
-    }
-
-    // Jika bukan cuaca atau pencarian, lanjutkan ke Gemini API
-    const geminiResponse = await generateGeminiResponse(message);
-    return res.status(200).json({ reply: geminiResponse });
-
+    return res.status(200).json({ reply: text });
   } catch (error) {
-    console.error("Error:", error);
-    return res.status(500).json({ error: "Terjadi kesalahan." });
+    console.error("Error dari Gemini:", error);
+    return res.status(500).json({ error: "Gagal menghasilkan jawaban dari Gemini." });
   }
 }
