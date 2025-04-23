@@ -2,6 +2,18 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { promises as fs } from "fs";
+import path from "path";
+
+/* ------- Cache profil AI ------- */
+let AI_PROFILE = "";
+async function getAIProfile() {
+  if (!AI_PROFILE) {
+    const filePath = path.join(process.cwd(), "data", "ai_profile.md");
+    AI_PROFILE = await fs.readFile(filePath, "utf8");
+  }
+  return AI_PROFILE;
+}
 
 /* ──────────────── Konstanta CORS ──────────────── */
 const ALLOWED_ORIGIN = "https://portofoliomukti.framer.website";  // ganti/array-kan kalau perlu
@@ -102,13 +114,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   /* ────────── 7. Fallback ke GEMINI ────────── */
+  /* ... di bagian Gemini fallback ... */
   try {
+    const profile = await getAIProfile();
+    const systemPrompt = `${profile}\n\nUser: ${prompt}\nAI:`;
+
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const { response } = await model.generateContent(prompt);
+    const { response } = await model.generateContent(systemPrompt);
     const reply = response.text();
+
     return res.status(200).json({ reply });
   } catch (err) {
-    console.error("Gemini error:", err);
-    return res.status(500).json({ error: "Gagal menghasilkan jawaban dari Gemini." });
+    /* ... */
   }
 }
