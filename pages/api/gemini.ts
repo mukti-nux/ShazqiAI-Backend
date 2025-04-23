@@ -23,7 +23,7 @@ async function searchSerper(query: string) {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // CORS
-  res.setHeader("Access-Control-Allow-Origin", "https://portofoliomukti.framer.website/shazqiai");
+  res.setHeader("Access-Control-Allow-Origin", "https://portofoliomukti.framer.website");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
