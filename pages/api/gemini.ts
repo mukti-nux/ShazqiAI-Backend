@@ -1,77 +1,98 @@
-// pages/api/gemini.ts
-import type { NextApiRequest, NextApiResponse } from "next"
-import axios from "axios"
-import { GoogleGenerativeAI } from "@google/generative-ai"
-import { promises as fs } from "fs"
-import path from "path"
+// pages/api/ai.ts  (contoh nama file)
+import type { NextApiRequest, NextApiResponse } from "next";
+import axios from "axios";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { promises as fs } from "fs";
+import path from "path";
 
-/* ── Konstanta CORS ── */
-const ORIGIN = "https://portofoliomukti.framer.website"
-const METHODS = "POST, OPTIONS"
-const HEADERS = "Content-Type"
-
-/* ── Inisialisasi Gemini ── */
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-
-/* ── Cache profil AI ── */
-let AI_PROFILE = ""
-async function getProfile() {
+/* ------- Cache profil AI ------- */
+let AI_PROFILE = "";
+async function getAIProfile() {
   if (!AI_PROFILE) {
-    const filePath = path.join(process.cwd(), "data", "ai_profile.md")
-    AI_PROFILE = await fs.readFile(filePath, "utf8")
+    const filePath = path.join(process.cwd(), "data", "ai_profile.md");
+    AI_PROFILE = await fs.readFile(filePath, "utf8");
   }
-  return AI_PROFILE
+  return AI_PROFILE;
 }
 
-/* ── Fungsi ke Serper.dev ── */
-async function searchSerper(q: string) {
+/* ──────────────── Konstanta CORS ──────────────── */
+const ALLOWED_ORIGIN = "https://portofoliomukti.framer.website";  // ganti/array-kan kalau perlu
+const ALLOWED_METHODS = "POST, OPTIONS";
+const ALLOWED_HEADERS = "Content-Type";          // tambah 'Authorization' dsb. bila diperlukan
+// const ALLOW_CREDENTIALS = true;               // aktifkan jika kirim cookie / auth
+
+/* ──────────────── Inisialisasi Gemini ──────────────── */
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+/* ──────────────── Fungsi pencarian Serper.dev ──────────────── */
+async function searchSerper(query: string) {
   const { data } = await axios.post(
     "https://google.serper.dev/search",
-    { q },
+    { q: query },
     {
       headers: {
         "X-API-KEY": process.env.SERPER_API_KEY!,
         "Content-Type": "application/json",
       },
     }
-  )
-  return data.organic ?? []
+  );
+  return data.organic ?? [];
 }
 
+/* ──────────────── Route handler utama ──────────────── */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log("📥 /gemini hit", { method: req.method, at: Date.now() });
-  /* ── Pasang header CORS ── */
-  res.setHeader("Access-Control-Allow-Origin", ORIGIN)
-  res.setHeader("Access-Control-Allow-Methods", METHODS)
-  res.setHeader("Access-Control-Allow-Headers", HEADERS)
-  if (req.method === "OPTIONS") return res.status(200).end()
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" })
+  /* ── 1. Pasang header CORS untuk SEMUA response ── */
+  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+  res.setHeader("Access-Control-Allow-Methods", ALLOWED_METHODS);
+  res.setHeader("Access-Control-Allow-Headers", ALLOWED_HEADERS);
+  // Jika perlu credentials:
+  // res.setHeader("Access-Control-Allow-Credentials", "true");
 
-  /* ── Ambil body ── */
-  const { message: prompt, username } = req.body as { message?: string; username?: string }
-  if (!prompt || typeof prompt !== "string") return res.status(400).json({ error: "Empty message" })
+  /* ── 2. Jawab pre‑flight OPTIONS ── */
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();           // 204 juga boleh
+  }
 
-  const keyword = prompt.toLowerCase()
+  /* ── 3. Batasi hanya POST ── */
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Metode tidak diizinkan" });
+  }
 
-  /* ====== 1. CUACA ====== */
+  /* ── 4. Validasi input ── */
+  const { message: prompt } = req.body;
+  if (!prompt || typeof prompt !== "string") {
+    return res.status(400).json({ error: "Pesan tidak boleh kosong" });
+  }
+
+  const keyword = prompt.toLowerCase();
+
+  /* ────────── 5. Cek kata kunci CUACA ────────── */
   if (/cuaca|derajat|panas|dingin|suhu/.test(keyword)) {
     try {
-      const { data } = await axios.get("https://api.open-meteo.com/v1/forecast", {
-        params: {
-          latitude: -7.4706,
-          longitude: 110.2178,
-          daily: "temperature_2m_max,temperature_2m_min",
-          timezone: "Asia/Bangkok",
-        },
-      })
-      const reply = `Cuaca hari ini di Tempuran: tertinggi ${data.daily.temperature_2m_max[0]}°C dan terendah ${data.daily.temperature_2m_min[0]}°C.`
-      return res.status(200).json({ reply })
-    } catch (e) {
-      return res.status(500).json({ error: "Gagal ambil data cuaca" })
+      const { data } = await axios.get(
+        "https://api.open-meteo.com/v1/forecast",
+        {
+          params: {
+            latitude: -7.4706,
+            longitude: 110.2178,
+            daily: "temperature_2m_max,temperature_2m_min",
+            timezone: "Asia/Bangkok",
+          },
+        }
+      );
+
+      const max = data.daily.temperature_2m_max[0];
+      const min = data.daily.temperature_2m_min[0];
+      const reply = `Cuaca hari ini di Tempuran: suhu tertinggi ${max}°C dan terendah ${min}°C. Jangan lupa bawa payung ya! ☁️☂️`;
+
+      return res.status(200).json({ reply });
+    } catch (err) {
+      console.error("Cuaca error:", err);
+      return res.status(500).json({ error: "Gagal ambil data cuaca." });
     }
   }
 
-  /* ====== 2. SERPER SEARCH ====== */
+  /* ────────── 6. Deteksi kata kunci SERPER ────────── */
   if (
     keyword.startsWith("cari ") ||
     keyword.startsWith("search ") ||
@@ -80,29 +101,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     keyword.includes("dimana")
   ) {
     try {
-      const results = await searchSerper(prompt)
-      const r =
+      const results = await searchSerper(prompt);
+      const reply =
         results.length > 0
           ? `🔎 *${results[0].title}*\n${results[0].snippet}\n🔗 ${results[0].link}`
-          : "Tidak ditemukan hasil relevan."
-      return res.status(200).json({ reply: r })
-    } catch (e) {
-      return res.status(500).json({ error: "Gagal ambil data pencarian" })
+          : "Tidak ditemukan hasil yang relevan.";
+      return res.status(200).json({ reply });
+    } catch (err) {
+      console.error("Serper error:", err);
+      return res.status(500).json({ error: "Gagal mengambil data pencarian." });
     }
   }
 
-  /* ====== 3. GEMINI ====== */
+  /* ────────── 7. Fallback ke GEMINI ────────── */
+  /* ... di bagian Gemini fallback ... */
   try {
-    const profile = await getProfile()
-    const persona = username ? `Kamu sedang berbicara dengan ${username}.` : ""
-    const systemPrompt = `${profile}\n${persona}\n\nUser: ${prompt}\nAI:`
+    const profile = await getAIProfile();
+    const systemPrompt = `${profile}\n\nUser: ${prompt}\nAI:`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-    const { response } = await model.generateContent(systemPrompt)
-    const reply = response.text()
-    return res.status(200).json({ reply })
-  } catch (e) {
-    console.error("Gemini error:", e)
-    return res.status(500).json({ error: "Gagal menghasilkan jawaban" })
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const { response } = await model.generateContent(systemPrompt);
+    const reply = response.text();
+
+    return res.status(200).json({ reply });
+  } catch (err) {
+    /* ... */
   }
 }
