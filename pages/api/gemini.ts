@@ -39,6 +39,7 @@ async function searchSerper(q: string) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log("📥 /gemini hit", { method: req.method, at: Date.now() });
   /* ── Pasang header CORS ── */
   res.setHeader("Access-Control-Allow-Origin", ORIGIN)
   res.setHeader("Access-Control-Allow-Methods", METHODS)
