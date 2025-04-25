@@ -1,28 +1,33 @@
-//lib/storage.ts
-export type ChatMeta = { id: string; title: string; created: number };
-export type Message  = { role: "user" | "assistant"; content: string };
+const BASE_URL = "https://shazqi-ai-backend-deploy.vercel.app/api/storage"
 
-export function loadMeta(): ChatMeta[] {
-  return JSON.parse(localStorage.getItem("conversations") || "[]");
+export async function loadMeta() {
+    const res = await fetch(`${BASE_URL}/meta`)
+    return await res.json()
 }
 
-export function saveMeta(list: ChatMeta[]) {
-  localStorage.setItem("conversations", JSON.stringify(list));
+export async function saveMeta(list: any[]) {
+    await fetch(`${BASE_URL}/meta`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(list),
+    })
 }
 
-export function loadMessages(id: string): Message[] {
-  return JSON.parse(localStorage.getItem(`conv_${id}`) || "[]");
+export async function loadMessages(id: string) {
+    const res = await fetch(`${BASE_URL}/messages?id=${id}`)
+    return await res.json()
 }
 
-export function saveMessages(id: string, msgs: Message[]) {
-  localStorage.setItem(`conv_${id}`, JSON.stringify(msgs));
+export async function saveMessages(id: string, msgs: any[]) {
+    await fetch(`${BASE_URL}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, messages: msgs }),
+    })
 }
 
-export function createConversation() {
-  const id = crypto.randomUUID();
-  const meta: ChatMeta = { id, title: "Percakapan Baru", created: Date.now() };
-  const list = [meta, ...loadMeta()];
-  saveMeta(list);
-  saveMessages(id, []);
-  return id;
+export async function createConversation() {
+    const res = await fetch(`${BASE_URL}/create`)
+    const data = await res.json()
+    return data.id
 }
