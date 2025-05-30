@@ -5,8 +5,10 @@ import { promises as fs } from "fs";
 import path from "path";
 
 /* ── Konstanta CORS ── */
-const ORIGIN  = ["https://portofoliomukti.framer.website", 
-                 "https://portofolioku2-astro-theme.vercel.app"]; // ganti "*" saat debug
+const ORIGIN = [
+  "https://portofoliomukti.framer.website",
+  "https://portofolioku2-astro-theme.vercel.app",
+];
 const METHODS = "POST, OPTIONS";
 const HEADERS = "Content-Type";
 
@@ -42,27 +44,33 @@ async function searchSerper(q: string) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log("📥 /gemini hit", { method: req.method, at: Date.now() });
 
+  /* CORS Header Dinamis */
+  const origin = req.headers.origin || "";
+  if (ORIGIN.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", METHODS);
+  res.setHeader("Access-Control-Allow-Headers", HEADERS);
+  res.setHeader("Vary", "Origin");
+
   /* 1. PRE‑FLIGHT OPTIONS */
   if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Allow-Origin", ORIGIN);
-    res.setHeader("Access-Control-Allow-Methods", METHODS);
-    res.setHeader("Access-Control-Allow-Headers", HEADERS);
-    res.setHeader("Vary", "Origin");
-    return res.status(200).end();          // ← pakai .end()
+    return res.status(200).end();
   }
 
   /* 2. Izinkan hanya POST */
-  if (req.method !== "POST")
+  if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
-  /* 3. Header CORS untuk POST */
-  res.setHeader("Access-Control-Allow-Origin", ORIGIN);
-  res.setHeader("Vary", "Origin");
-
-  /* 4. Ambil body */
-  const { message: prompt, username } = req.body as { message?: string; username?: string };
-  if (!prompt || typeof prompt !== "string")
+  /* 3. Ambil body */
+  const { message: prompt, username } = req.body as {
+    message?: string;
+    username?: string;
+  };
+  if (!prompt || typeof prompt !== "string") {
     return res.status(400).json({ error: "Empty message" });
+  }
 
   const keyword = prompt.toLowerCase();
 
@@ -100,11 +108,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   /* ====== 3. GEMINI AI ====== */
   try {
-    const profile   = await getProfile();
-    const persona   = username ? `Kamu sedang berbicara dengan ${username}.` : "";
+    const profile = await getProfile();
+    const persona = username ? `Kamu sedang berbicara dengan ${username}.` : "";
     const systemMsg = `${profile}\n${persona}\n\nUser: ${prompt}\nAI:`;
 
-    const model     = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const { response } = await model.generateContent(systemMsg);
     const reply = response.text();
 
