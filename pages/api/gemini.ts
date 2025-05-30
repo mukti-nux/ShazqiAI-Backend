@@ -5,7 +5,8 @@ import { promises as fs } from "fs";
 import path from "path";
 
 /* ── Konstanta CORS ── */
-const ORIGIN  = "https://portofoliomukti.framer.website"; // ganti "*" saat debug
+const ORIGIN  = ["https://portofoliomukti.framer.website", 
+                 "https://portofolioku2-astro-theme.vercel.app/"]; // ganti "*" saat debug
 const METHODS = "POST, OPTIONS";
 const HEADERS = "Content-Type";
 
