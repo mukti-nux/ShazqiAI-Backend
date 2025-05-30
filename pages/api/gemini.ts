@@ -6,8 +6,7 @@ import path from "path";
 
 /* ── Konstanta CORS ── */
 const ORIGIN = [
-  "https://portofoliomukti.framer.website",
-  "https://portofolioku2-astro-theme.vercel.app/ShazQIAI",
+  "https://portofolioku2-astro-theme.vercel.app",
 ];
 const METHODS = "POST, OPTIONS";
 const HEADERS = "Content-Type";
