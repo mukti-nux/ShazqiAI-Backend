@@ -3,14 +3,7 @@ import axios from "axios";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { promises as fs } from "fs";
 import path from "path";
-
-/* ── Konstanta CORS ── */
-const ORIGIN = [
-  "https://portofoliomukti.framer.website",
-  "https://portofolioku2-astro-theme.vercel.app/",
-];
-const METHODS = "POST, OPTIONS";
-const HEADERS = "Content-Type";
+import applyCors from "@/utils/cors";
 
 /* ── Inisialisasi Gemini API ── */
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -40,34 +33,41 @@ async function searchSerper(q: string) {
   return data.organic ?? [];
 }
 
+/* ── Allowed Origins ── */
+const ALLOWED_ORIGINS = [
+  "https://portofoliomukti.framer.website",
+  "https://portofolioku2-astro-theme.vercel.app"
+];
+
 /* ── Endpoint API ── */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log("📥 /gemini hit", { method: req.method, at: Date.now() });
 
-  /* CORS Header Dinamis */
+  /* 🔓 Jalankan CORS middleware */
+  await applyCors(req, res);
+
+  /* Tambahan Header manual (untuk jaga-jaga) */
   const origin = req.headers.origin || "";
-  if (ORIGIN.includes(origin)) {
+  if (ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
-  res.setHeader("Access-Control-Allow-Methods", METHODS);
-  res.setHeader("Access-Control-Allow-Headers", HEADERS);
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Vary", "Origin");
 
-  /* 1. PRE‑FLIGHT OPTIONS */
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  /* 2. Izinkan hanya POST */
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  /* 3. Ambil body */
   const { message: prompt, username } = req.body as {
     message?: string;
     username?: string;
   };
+
   if (!prompt || typeof prompt !== "string") {
     return res.status(400).json({ error: "Empty message" });
   }
