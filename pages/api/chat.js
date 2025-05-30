@@ -1,38 +1,52 @@
-import { searchSerper } from '@/lib/searchSerper'
-import { getWeather } from '@/lib/weatherAPI'
+import { searchSerper } from '@/lib/searchSerper';
+import { getWeather } from '@/lib/weatherAPI';
+
+const ALLOWED_ORIGINS = [
+  "https://portofoliomukti.framer.website",
+  "https://portofolioku2-astro-theme.vercel.app",
+];
 
 export default async function handler(req, res) {
-  // 🔐 CORS Header (ganti domain kalau perlu)
-  res.setHeader("Access-Control-Allow-Origin", "https://portofoliomukti.framer.website")
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-  if (req.method === "OPTIONS") return res.status(200).end()
-
-  const { message } = req.body
-
-  if (!message) {
-    return res.status(400).json({ error: "Tidak ada pesan yang dikirim." })
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
   }
 
-  const keyword = message.toLowerCase()
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Vary", "Origin");
 
-  // ☁️ 1. Deteksi Cuaca
+  // Handle preflight CORS
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  // Hanya izinkan POST
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
+  const { message } = req.body || {};
+
+  if (!message || typeof message !== "string") {
+    return res.status(400).json({ error: "Tidak ada pesan yang dikirim." });
+  }
+
+  const keyword = message.toLowerCase();
+
+  // ☁️ 1. Cuaca
   if (keyword.includes("cuaca") || keyword.includes("weather")) {
     try {
-      const weather = await getWeather()
-      console.log("🌤 Cuaca dijawab:", weather)
+      const weather = await getWeather();
       return res.status(200).json({
         role: "assistant",
         content: weather,
-      })
+      });
     } catch (err) {
-      console.error("❌ Gagal ambil cuaca:", err)
-      return res.status(500).json({ error: "Gagal mengambil data cuaca." })
+      console.error("❌ Cuaca error:", err);
+      return res.status(500).json({ error: "Gagal mengambil data cuaca." });
     }
   }
 
-  // 🔎 2. Deteksi Pencarian Serper
+  // 🔍 2. Serper Search
   if (
     keyword.startsWith("cari ") ||
     keyword.startsWith("search ") ||
@@ -41,23 +55,21 @@ export default async function handler(req, res) {
     keyword.includes("dimana")
   ) {
     try {
-      const results = await searchSerper(message)
-      console.log("🔍 Hasil Serper:", results)
+      const results = await searchSerper(message);
       const formatted = results.length > 0
         ? `🔎 **${results[0].title}**\n${results[0].snippet}\n🔗 ${results[0].link}`
-        : "Tidak ditemukan hasil yang relevan."
-
+        : "Tidak ditemukan hasil yang relevan.";
       return res.status(200).json({
         role: "assistant",
         content: formatted,
-      })
+      });
     } catch (err) {
-      console.error("❌ Gagal ambil Serper:", err)
-      return res.status(500).json({ error: "Gagal mengambil data pencarian." })
+      console.error("❌ Serper error:", err);
+      return res.status(500).json({ error: "Gagal mengambil data pencarian." });
     }
   }
 
-  // 💬 3. Default ChatGPT
+  // 💬 3. Fallback ke ChatGPT
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -70,17 +82,16 @@ export default async function handler(req, res) {
         messages: [{ role: "user", content: message }],
         temperature: 0.7,
       }),
-    })
+    });
 
-    const data = await response.json()
-    console.log("🧠 ChatGPT Balasan:", data)
+    const data = await response.json();
 
     return res.status(200).json({
       role: "assistant",
       content: data.choices?.[0]?.message?.content || "(Tidak ada balasan)",
-    })
+    });
   } catch (err) {
-    console.error("❌ Gagal dari ChatGPT:", err)
-    return res.status(500).json({ error: "Gagal mendapatkan respons dari ChatGPT." })
+    console.error("❌ ChatGPT error:", err);
+    return res.status(500).json({ error: "Gagal mendapatkan respons dari ChatGPT." });
   }
 }
