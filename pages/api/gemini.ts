@@ -36,17 +36,15 @@ async function searchSerper(q: string) {
 /* ── Allowed Origins ── */
 const ALLOWED_ORIGINS = [
   "https://portofoliomukti.framer.website",
-  "https://portofolioku2-astro-theme.vercel.app"
+  "https://portofolioku2-astro-theme.vercel.app",
 ];
 
 /* ── Endpoint API ── */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log("📥 /gemini hit", { method: req.method, at: Date.now() });
 
-  /* 🔓 Jalankan CORS middleware */
   await applyCors(req, res);
 
-  /* Tambahan Header manual */
   const origin = req.headers.origin || "";
   if (ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
@@ -55,25 +53,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Vary", "Origin");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+
+  const { messages, username } = req.body || {};
+
+  if (!messages || typeof messages !== "string") {
+    console.warn("⚠️ Bad Request: messages kosong atau bukan string");
+    return res.status(400).json({ error: "Empty or invalid messages" });
   }
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
+  console.log("🧾 messages received:\n", messages);
 
-  /* 🧾 Log isi request body */
-  console.log("🧾 Body received:", req.body);
-
-  const { message: prompt, username } = req.body || {};
-
-  if (!prompt || typeof prompt !== "string") {
-    console.warn("⚠️ Bad Request: message kosong atau bukan string");
-    return res.status(400).json({ error: "Empty or invalid message" });
-  }
-
-  const keyword = prompt.toLowerCase();
+  // Ambil kalimat terakhir dari user untuk dianalisis keywordnya
+  const userLines = messages
+    .split("\n")
+    .filter((line) => line.startsWith("User:") || line.startsWith("🧑"));
+  const lastUserMessage = userLines[userLines.length - 1] || "";
+  const keyword = lastUserMessage.toLowerCase();
 
   /* ====== 1. CUACA ====== */
   if (/cuaca|derajat|panas|dingin|suhu/.test(keyword)) {
@@ -94,9 +91,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   /* ====== 2. SERPER SEARCH ====== */
-  if (/cari|search|apa itu|jelaskan|dimana/.test(keyword)) {
+  if (/cari|search|apa itu|jelaskan|dimana|siapa|kenapa|kapan/.test(keyword)) {
     try {
-      const results = await searchSerper(prompt);
+      const searchQuery = lastUserMessage.replace(/^User:\s*/i, "").trim();
+      const results = await searchSerper(searchQuery);
       const r =
         results.length > 0
           ? `🔎 *${results[0].title}*\n${results[0].snippet}\n🔗 ${results[0].link}`
@@ -111,7 +109,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const profile = await getProfile();
     const persona = username ? `Kamu sedang berbicara dengan ${username}.` : "";
-    const systemMsg = `${profile}\n${persona}\n\nUser: ${prompt}\nAI:`;
+    const systemMsg = `${profile}\n${persona}\n\n${messages}`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const { response } = await model.generateContent(systemMsg);
