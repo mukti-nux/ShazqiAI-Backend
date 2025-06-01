@@ -46,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   /* 🔓 Jalankan CORS middleware */
   await applyCors(req, res);
 
-  /* Tambahan Header manual (untuk jaga-jaga) */
+  /* Tambahan Header manual */
   const origin = req.headers.origin || "";
   if (ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
@@ -63,13 +63,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { message: prompt, username } = req.body as {
-    message?: string;
-    username?: string;
-  };
+  /* 🧾 Log isi request body */
+  console.log("🧾 Body received:", req.body);
+
+  const { message: prompt, username } = req.body || {};
 
   if (!prompt || typeof prompt !== "string") {
-    return res.status(400).json({ error: "Empty message" });
+    console.warn("⚠️ Bad Request: message kosong atau bukan string");
+    return res.status(400).json({ error: "Empty or invalid message" });
   }
 
   const keyword = prompt.toLowerCase();

@@ -1,5 +1,6 @@
 import { searchSerper } from '@/lib/searchSerper';
 import { getWeather } from '@/lib/weatherAPI';
+import applyCors from '@/utils/cors';
 
 const ALLOWED_ORIGINS = [
   "https://portofoliomukti.framer.website",

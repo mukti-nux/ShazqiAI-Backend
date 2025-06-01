@@ -5,7 +5,8 @@ import Cors from "cors";
 // Inisialisasi middleware CORS
 const cors = Cors({
   methods: ["POST", "OPTIONS"],
-  origin: ["https://portofoliomukti.framer.website","https://portofolioku2-astro-theme.vercel.app"] // Ganti dengan domain Framer kamu kalau mau lebih aman
+  origin: ["https://portofoliomukti.framer.website",
+            "https://portofolioku2-astro-theme.vercel.app"] // Ganti dengan domain Framer kamu kalau mau lebih aman
 });
 
 function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) {
