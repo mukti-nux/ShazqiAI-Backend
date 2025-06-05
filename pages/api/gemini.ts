@@ -91,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   /* ====== 2. SERPER SEARCH ====== */
-  if (/cari|search|apa itu|jelaskan|dimana|siapa|kenapa|kapan/.test(keyword)) {
+  if (/cari|search|carikan/.test(keyword)) {
     try {
       const searchQuery = lastUserMessage.replace(/^User:\s*/i, "").trim();
       const results = await searchSerper(searchQuery);
