@@ -5,10 +5,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import applyCors from "@/utils/cors";
 
-/* ── Inisialisasi Gemini API ── */
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-/* ── Cache profil AI ── */
 let AI_PROFILE = "";
 async function getProfile() {
   if (!AI_PROFILE) {
@@ -18,7 +16,6 @@ async function getProfile() {
   return AI_PROFILE;
 }
 
-/* ── Fungsi ke Serper.dev ── */
 async function searchSerper(q: string) {
   const { data } = await axios.post(
     "https://google.serper.dev/search",
@@ -33,16 +30,12 @@ async function searchSerper(q: string) {
   return data.organic ?? [];
 }
 
-/* ── Allowed Origins ── */
 const ALLOWED_ORIGINS = [
   "https://portofoliomukti.framer.website",
   "https://portofolioku2-astro-theme.vercel.app",
 ];
 
-/* ── Endpoint API ── */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log("📥 /gemini hit", { method: req.method, at: Date.now() });
-
   await applyCors(req, res);
 
   const origin = req.headers.origin || "";
@@ -59,20 +52,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { messages, username } = req.body || {};
 
   if (!messages || typeof messages !== "string") {
-    console.warn("⚠️ Bad Request: messages kosong atau bukan string");
     return res.status(400).json({ error: "Empty or invalid messages" });
   }
 
-  console.log("🧾 messages received:\n", messages);
-
-  // Ambil kalimat terakhir dari user untuk dianalisis keywordnya
+  // Contoh keyword check sederhana (cuaca, search)
   const userLines = messages
     .split("\n")
     .filter((line) => line.startsWith("User:") || line.startsWith("🧑"));
   const lastUserMessage = userLines[userLines.length - 1] || "";
   const keyword = lastUserMessage.toLowerCase();
 
-  /* ====== 1. CUACA ====== */
   if (/cuaca|derajat|panas|dingin|suhu/.test(keyword)) {
     try {
       const { data } = await axios.get("https://api.open-meteo.com/v1/forecast", {
@@ -90,7 +79,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  /* ====== 2. SERPER SEARCH ====== */
   if (/cari|search|carikan/.test(keyword)) {
     try {
       const searchQuery = lastUserMessage.replace(/^User:\s*/i, "").trim();
@@ -105,7 +93,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  /* ====== 3. GEMINI AI ====== */
   try {
     const profile = await getProfile();
     const persona = username ? `Kamu sedang berbicara dengan ${username}.` : "";
