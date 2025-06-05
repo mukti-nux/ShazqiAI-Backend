@@ -1,6 +1,5 @@
 import { searchSerper } from '@/lib/searchSerper';
 import { getWeather } from '@/lib/weatherAPI';
-import applyCors from '@/utils/cors';
 
 const ALLOWED_ORIGINS = [
   "https://portofoliomukti.framer.website",
@@ -9,69 +8,66 @@ const ALLOWED_ORIGINS = [
 
 export default async function handler(req, res) {
   const origin = req.headers.origin;
+
+  // Handle CORS
   if (ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    // Jika origin tidak diizinkan, bisa dikasih header kosong atau di-block (optional)
+    res.setHeader("Access-Control-Allow-Origin", "null");
   }
 
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Vary", "Origin");
 
-  // Handle preflight CORS
-  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method === "OPTIONS") {
+    // Preflight CORS request
+    return res.status(204).end(); // 204 No Content lebih tepat daripada 200
+  }
 
-  // Hanya izinkan POST
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+    return res.status(405).json({ error: "Method Not Allowed. Gunakan POST." });
   }
 
   const { message } = req.body || {};
 
   if (!message || typeof message !== "string") {
-    return res.status(400).json({ error: "Tidak ada pesan yang dikirim." });
+    return res.status(400).json({ error: "Pesan (message) wajib berupa string." });
   }
 
   const keyword = message.toLowerCase();
 
-  // ☁️ 1. Cuaca
-  if (keyword.includes("cuaca") || keyword.includes("weather")) {
-    try {
+  try {
+    // 1. Cek Cuaca
+    if (keyword.includes("cuaca") || keyword.includes("weather")) {
       const weather = await getWeather();
       return res.status(200).json({
         role: "assistant",
         content: weather,
       });
-    } catch (err) {
-      console.error("❌ Cuaca error:", err);
-      return res.status(500).json({ error: "Gagal mengambil data cuaca." });
     }
-  }
 
-  // 🔍 2. Serper Search
-  if (
-    keyword.startsWith("cari ") ||
-    keyword.startsWith("search ") ||
-    keyword.includes("apa itu") ||
-    keyword.includes("jelaskan") ||
-    keyword.includes("dimana")
-  ) {
-    try {
+    // 2. Cek Search Serper
+    if (
+      keyword.startsWith("cari ") ||
+      keyword.startsWith("search ") ||
+      keyword.includes("apa itu") ||
+      keyword.includes("jelaskan") ||
+      keyword.includes("dimana")
+    ) {
       const results = await searchSerper(message);
       const formatted = results.length > 0
         ? `🔎 **${results[0].title}**\n${results[0].snippet}\n🔗 ${results[0].link}`
         : "Tidak ditemukan hasil yang relevan.";
+
       return res.status(200).json({
         role: "assistant",
         content: formatted,
       });
-    } catch (err) {
-      console.error("❌ Serper error:", err);
-      return res.status(500).json({ error: "Gagal mengambil data pencarian." });
     }
-  }
 
-  // 💬 3. Fallback ke ChatGPT
-  try {
+    // 3. Fallback ke ChatGPT
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -85,6 +81,11 @@ export default async function handler(req, res) {
       }),
     });
 
+    if (!response.ok) {
+      console.error("❌ ChatGPT API error:", await response.text());
+      return res.status(500).json({ error: "Gagal mendapatkan respons dari ChatGPT." });
+    }
+
     const data = await response.json();
 
     return res.status(200).json({
@@ -92,7 +93,7 @@ export default async function handler(req, res) {
       content: data.choices?.[0]?.message?.content || "(Tidak ada balasan)",
     });
   } catch (err) {
-    console.error("❌ ChatGPT error:", err);
-    return res.status(500).json({ error: "Gagal mendapatkan respons dari ChatGPT." });
+    console.error("❌ Error handler:", err);
+    return res.status(500).json({ error: "Terjadi kesalahan pada server." });
   }
 }
