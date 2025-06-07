@@ -51,18 +51,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { messages, username } = req.body || {};
 
-  if (!messages || typeof messages !== "string") {
+  if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: "Empty or invalid messages" });
   }
 
-  // Contoh keyword check sederhana (cuaca, search)
-  const userLines = messages
-    .split("\n")
-    .filter((line) => line.startsWith("User:") || line.startsWith("🧑"));
-  const lastUserMessage = userLines[userLines.length - 1] || "";
-  const keyword = lastUserMessage.toLowerCase();
+  // Ambil pesan terakhir dari user untuk keyword check
+  const userMessages = messages.filter(m => m.role === "user");
+  const lastUserMessage = userMessages.length ? userMessages[userMessages.length - 1].content.toLowerCase() : "";
 
-  if (/cuaca|derajat|panas|dingin|suhu/.test(keyword)) {
+  if (/cuaca|derajat|panas|dingin|suhu/.test(lastUserMessage)) {
     try {
       const { data } = await axios.get("https://api.open-meteo.com/v1/forecast", {
         params: {
@@ -79,9 +76,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  if (/cari|search|carikan/.test(keyword)) {
+  if (/cari|search|carikan/.test(lastUserMessage)) {
     try {
-      const searchQuery = lastUserMessage.replace(/^User:\s*/i, "").trim();
+      const searchQuery = lastUserMessage.trim();
       const results = await searchSerper(searchQuery);
       const r =
         results.length > 0
@@ -96,7 +93,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const profile = await getProfile();
     const persona = username ? `Kamu sedang berbicara dengan ${username}.` : "";
-    const systemMsg = `${profile}\n${persona}\n\n${messages}`;
+
+    // Convert array messages ke format string percakapan
+    const chatHistoryStr = messages
+      .map(msg => {
+        if (msg.role === "user") return `User: ${msg.content}`;
+        if (msg.role === "assistant") return `AI: ${msg.content}`;
+        return `${msg.role}: ${msg.content}`;
+      })
+      .join("\n");
+
+    const systemMsg = `${profile}\n${persona}\n\n${chatHistoryStr}`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const { response } = await model.generateContent(systemMsg);
