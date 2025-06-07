@@ -55,9 +55,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: "Empty or invalid messages" });
   }
 
-  // Ambil pesan terakhir dari user untuk keyword check
-  const userMessages = messages.filter(m => m.role === "user");
-  const lastUserMessage = userMessages.length ? userMessages[userMessages.length - 1].content.toLowerCase() : "";
+  // Ambil pesan terakhir dari user
+  const userMessages = messages.filter((m) => m.role === "user");
+  const lastUserMessage = userMessages.length
+    ? userMessages[userMessages.length - 1].content.toLowerCase()
+    : "";
 
   if (/cuaca|derajat|panas|dingin|suhu/.test(lastUserMessage)) {
     try {
@@ -94,20 +96,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const profile = await getProfile();
     const persona = username ? `Kamu sedang berbicara dengan ${username}.` : "";
 
-    // Convert array messages ke format string percakapan
     const chatHistoryStr = messages
-      .map(msg => {
+      .map((msg) => {
         if (msg.role === "user") return `User: ${msg.content}`;
-        if (msg.role === "assistant") return `AI: ${msg.content}`;
+        if (msg.role === "assistant") return `AI: ${msg.content.replace(/^AI:\s*/i, "")}`;
         return `${msg.role}: ${msg.content}`;
       })
       .join("\n");
 
     const systemMsg = `${profile}\n${persona}\n\n${chatHistoryStr}`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      generationConfig: {
+        temperature: 0.8,
+        topK: 40,
+        topP: 0.9,
+        maxOutputTokens: 1024,
+      },
+    });
+
     const { response } = await model.generateContent(systemMsg);
-    const reply = response.text();
+    const reply = response.text().replace(/^AI:\s*/i, ""); // hilangkan "AI:" di depan jika ada
 
     return res.status(200).json({ reply });
   } catch (e) {
