@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { searchSerper } from "@/lib/searchSerper";
 import { getWeather } from "@/lib/weatherAPI";
 import applyCors from "@/utils/cors";
@@ -14,6 +16,7 @@ export default async function handler(req, res) {
   if (ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
+
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Vary", "Origin");
@@ -21,32 +24,25 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
 
-  const { messages } = req.body || {};
-
+  const { messages, username } = req.body || {};
   if (!messages || !Array.isArray(messages)) {
-    console.error("⛔️ Invalid body:", req.body);
     return res.status(400).json({ error: "Pesan tidak valid." });
   }
 
   const lastMessage = messages[messages.length - 1]?.content?.toLowerCase() || "";
   if (!lastMessage) {
-    console.error("⛔️ Tidak ada konten pesan terakhir:", messages);
     return res.status(400).json({ error: "Tidak ada konten pesan terakhir." });
   }
-
-  console.log("✅ Pesan terakhir:", lastMessage);
 
   // 🌤 Cuaca
   if (lastMessage.includes("cuaca") || lastMessage.includes("weather")) {
     try {
       const weather = await getWeather();
-      console.log("✅ Cuaca berhasil diambil.");
       return res.status(200).json({
         role: "assistant",
         content: weather,
       });
     } catch (err) {
-      console.error("❌ Gagal mengambil cuaca:", err);
       return res.status(500).json({ error: "Gagal mengambil data cuaca." });
     }
   }
@@ -64,19 +60,34 @@ export default async function handler(req, res) {
       const formatted = results.length > 0
         ? `🔎 **${results[0].title}**\n${results[0].snippet}\n🔗 ${results[0].link}`
         : "Tidak ditemukan hasil yang relevan.";
-
-      console.log("✅ Pencarian berhasil.");
       return res.status(200).json({
         role: "assistant",
         content: formatted,
       });
     } catch (err) {
-      console.error("❌ Gagal mengambil pencarian Serper:", err);
       return res.status(500).json({ error: "Gagal mengambil data pencarian." });
     }
   }
 
-  // 🤖 Fallback ke Groq (LLM)
+  // 🧠 Load AI Profile + Tambahkan info pengguna
+  let aiProfile = "";
+  try {
+    const aiProfilePath = path.join(process.cwd(), "data", "ai_profile.md");
+    aiProfile = fs.readFileSync(aiProfilePath, "utf-8");
+  } catch (err) {
+    console.error("❌ Gagal membaca ai_profile.md:", err);
+  }
+
+  const personaInfo = username
+    ? `Nama pengguna yang sedang berinteraksi denganmu adalah ${username}.`
+    : "";
+
+  const fullMessages = [
+    { role: "system", content: `${aiProfile}\n\n${personaInfo}` },
+    ...messages,
+  ];
+
+  // 🤖 Groq LLM
   try {
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -85,21 +96,17 @@ export default async function handler(req, res) {
         Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "llama3-70b-8192", // atau "mixtral-8x7b-32768"
-        messages: messages,
-        temperature: 0.7,
+        model: "llama3-70b-8192",
+        messages: fullMessages,
+        temperature: 0.8,
       }),
     });
 
     const data = await response.json();
-    console.log("✅ Groq response:", data);
-
-    return res.status(200).json({
-      role: "assistant",
-      content: data.choices?.[0]?.message?.content || "(Tidak ada balasan)",
-    });
+    const reply = data.choices?.[0]?.message?.content || "(Tidak ada balasan)";
+    return res.status(200).json({ role: "assistant", content: reply });
   } catch (err) {
-    console.error("❌ Gagal terhubung ke Groq:", err);
-    return res.status(500).json({ error: "Gagal mendapatkan respons dari Groq." });
+    console.error("❌ Gagal menghubungi Groq:", err);
+    return res.status(500).json({ error: "Gagal mendapatkan respons dari AI." });
   }
 }
