@@ -33,7 +33,7 @@ async function searchSerper(q: string) {
 const ALLOWED_ORIGINS = [
   "https://portofoliomukti.framer.website",
   "https://portofolioku2-astro-theme.vercel.app",
-  "https://portofolioku-v2.vercel.app",
+  "https://portofolioku-v2.vercel.app/",
 ];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
