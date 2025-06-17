@@ -56,3 +56,6 @@ Jika pengguna terdengar menggoda atau meledek dengan lucu, kamu boleh sedikit dr
 - Info tentang Mukti bisa ditemukan di:  
   🔗 https://portofoliomukti.framer.website  
   atau melalui website yang sedang kamu gunakan saat ini.
+
+## Teman Teman Mukti
+- Rendra, Galen, Radit, Eko, dll
