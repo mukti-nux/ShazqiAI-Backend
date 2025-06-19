@@ -1,18 +1,18 @@
 // lib/firebase.ts
-import { initializeApp } from "firebase/app"
-import { getFirestore } from "firebase/firestore"
+import { initializeApp } from 'firebase/app';
+import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDSC8fyua3IJ1jJzCmesor469MqVHnEvfY",
-  authDomain: "shazqiai.firebaseapp.com",
-  projectId: "shazqiai",
-  storageBucket: "shazqiai.firebasestorage.app",
-  messagingSenderId: "675357194374",
-  appId: "1:675357194374:web:0996e63861a8c7ec68f907",
-  measurementId: "G-30QBJJX43W"
-}
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+};
 
-const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
-export { db }
+export { database };

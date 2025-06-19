@@ -5,6 +5,11 @@ import { promises as fs } from "fs";
 import path from "path";
 import applyCors from "@/utils/cors";
 
+// 🔥 Firebase Setup
+import { ref, push } from "firebase/database";
+import { database } from "@/lib/firebase";
+
+// Gemini setup
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 let AI_PROFILE = "";
@@ -56,12 +61,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: "Empty or invalid messages" });
   }
 
-  // Ambil pesan terakhir dari user
   const userMessages = messages.filter((m) => m.role === "user");
   const lastUserMessage = userMessages.length
     ? userMessages[userMessages.length - 1].content.toLowerCase()
     : "";
 
+  // 🔍 Cuaca
   if (/cuaca|derajat|panas|dingin|suhu/.test(lastUserMessage)) {
     try {
       const { data } = await axios.get("https://api.open-meteo.com/v1/forecast", {
@@ -79,6 +84,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
+  // 🔎 Pencarian via Serper
   if (/cari|search|carikan/.test(lastUserMessage)) {
     try {
       const searchQuery = lastUserMessage.trim();
@@ -93,6 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
+  // 🤖 Chat dengan Gemini
   try {
     const profile = await getProfile();
     const persona = username ? `Kamu sedang berbicara dengan ${username}.` : "";
@@ -118,7 +125,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const { response } = await model.generateContent(systemMsg);
-    const reply = response.text().replace(/^AI:\s*/i, ""); // hilangkan "AI:" di depan jika ada
+    const reply = response.text().replace(/^AI:\s*/i, "");
+
+    // 📝 Simpan ke Firebase
+    await push(ref(database, "gemini_logs"), {
+      username: username || "anonim",
+      prompt: lastUserMessage,
+      reply,
+      timestamp: Date.now(),
+    });
 
     return res.status(200).json({ reply });
   } catch (e) {
