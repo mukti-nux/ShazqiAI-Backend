@@ -39,7 +39,8 @@ const ALLOWED_ORIGINS = [
   "https://portofoliomukti.framer.website",
   "https://portofolioku2-astro-theme.vercel.app",
   "https://portofolioku-v2.vercel.app",
-  "https://portofolioku-v2.my.id"
+  "https://portofolioku-v2.my.id",
+  "https://www.portofolioku-v2.my.id/"
 ];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

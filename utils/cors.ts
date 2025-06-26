@@ -8,7 +8,8 @@ const cors = Cors({
   origin: ["https://portofoliomukti.framer.website",
             "https://portofolioku2-astro-theme.vercel.app",
             "https://portofolioku-v2.vercel.app",
-            "https://portofolioku-v2.my.id"
+            "https://portofolioku-v2.my.id",
+            "https://www.portofolioku-v2.my.id/"
           ] // Ganti dengan domain Framer kamu kalau mau lebih aman
 });
 
