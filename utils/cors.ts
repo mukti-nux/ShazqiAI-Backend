@@ -7,7 +7,9 @@ const cors = Cors({
   methods: ["POST", "OPTIONS"],
   origin: ["https://portofoliomukti.framer.website",
             "https://portofolioku2-astro-theme.vercel.app",
-            "https://portofolioku-v2.vercel.app"] // Ganti dengan domain Framer kamu kalau mau lebih aman
+            "https://portofolioku-v2.vercel.app",
+            "https://portofolioku-v2.my.id"
+          ] // Ganti dengan domain Framer kamu kalau mau lebih aman
 });
 
 function runMiddleware(req: NextApiRequest, res: NextApiResponse, fn: Function) {
