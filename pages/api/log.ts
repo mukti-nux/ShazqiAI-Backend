@@ -1,6 +1,6 @@
 // pages/api/log.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { adminDb } from '@/lib/firebaseAdmin'
+import { adminDb } from '@/lib/firebase-admin'
 import { ref, push } from 'firebase-admin/database'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
