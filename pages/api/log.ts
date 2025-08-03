@@ -1,7 +1,5 @@
-// pages/api/log.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { adminDb } from '@/lib/firebase-admin'
-import { ref, push } from 'firebase-admin/database'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' })
@@ -9,8 +7,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const data = req.body
 
   try {
-    const logRef = ref(adminDb, 'gemini_logs')
-    await push(logRef, data)
+    await adminDb.ref('gemini_logs').push({
+      ...data,
+      timestamp: Date.now()
+    })
 
     res.status(200).json({ message: 'Log berhasil dikirim.' })
   } catch (err) {
