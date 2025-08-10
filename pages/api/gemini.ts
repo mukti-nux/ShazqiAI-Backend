@@ -8,6 +8,7 @@ import applyCors from "@/utils/cors";
 // 🔥 Firebase Setup
 import { ref, push } from "firebase/database";
 import { database } from "@/lib/firebase";
+import { adminDb } from "@/lib/firebase-admin"
 
 // Gemini setup
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -129,17 +130,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { response } = await model.generateContent(systemMsg);
     const reply = response.text().replace(/^AI:\s*/i, "");
 
-    // 📝 Simpan ke Firebase
-    await push(ref(database, "gemini_logs"), {
-      username: username || "anonim",
-      prompt: lastUserMessage,
-      reply,
-      timestamp: Date.now(),
-    });
+// 📝 Simpan ke Firebase
+await adminDb.ref("gemini_logs").push({
+  username: username || "anonim",
+  prompt: lastUserMessage,
+  reply,
+  timestamp: Date.now(),
+});
 
-    return res.status(200).json({ reply });
-  } catch (e) {
+  return res.status(200).json({ reply });
+  }   catch (e) {
     console.error("Gemini error:", e);
     return res.status(500).json({ error: "Gagal menghasilkan jawaban" });
-  }
+}
 }
