@@ -132,16 +132,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const reply = response.text().replace(/^AI:\s*/i, "");
 
 // 📝 Simpan ke Firebase
-await adminDb.ref("gemini_logs").push({
-  username: username || "anonim",
+const today = new Date().toISOString().split("T")[0];
+const safeUser = (username || "anonim").trim().replace(/\s+/g, "_");
+await adminDb.ref(`gemini_logs/${today}/${safeUser}`).push({
   prompt: lastUserMessage,
   reply,
   timestamp: Date.now(),
 });
 
-  return res.status(200).json({ reply });
-  }   catch (e) {
-    console.error("Gemini error:", e);
-    return res.status(500).json({ error: "Gagal menghasilkan jawaban" });
+return res.status(200).json({ reply });
+} catch (e) {
+  console.error("Gemini error:", e);
+  return res.status(500).json({ error: "Gagal menghasilkan jawaban" });
 }
 }
