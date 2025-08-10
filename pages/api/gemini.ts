@@ -41,6 +41,7 @@ const ALLOWED_ORIGINS = [
   "https://portofolioku2-astro-theme.vercel.app",
   "https://portofolioku-v2.vercel.app",
   "https://portofolioku-v2.my.id",
+  "https://www.portofolioku-v2.my.id",
   "https://www.portofolioku-v2.my.id"
 ];
 
